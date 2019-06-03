@@ -1,0 +1,194 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "ComputerName": {
+      "type": "string"
+    },
+    "ComputerSize": {
+      "type": "string"
+    },
+    "LinuxVersion": {
+      "type": "string"
+    },
+    "AdminUserName": {
+      "type": "string"
+    },
+    "AdminPassword": {
+      "type": "string"
+    },    
+    "virtualNetworkResourceGroupName": {
+      "type": "string"
+    },
+    "virtualNetworkName": {
+      "type": "string"
+    },
+    "SubnetName": {
+      "type": "string"
+    },
+    "NetworkDNS": {
+      "type": "array",
+      "defaultValue": []
+    },
+    "dataDiskStorageType": {
+      "type": "string",
+      "defaultValue" : "Standard_LRS"
+    },
+    "osDiskStorageType": {
+      "type": "string"
+    },
+    "osDiskSize": {
+      "type": "int",
+      "defaultValue": 80
+    },
+    "dataDriveSizeGB": {
+      "type": "array",
+      "defaultValue": []
+    },
+    "rhel7Latest":{
+      "type": "string"
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 7
+    },
+    "deploymentId": {
+      "type": "string"
+    },
+    "availabilitySetName": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "rolePurpose": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    },
+    "productApp": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "vnetId": "[resourceId(parameters('virtualNetworkResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('SubnetName'))]",
+    "OSVersion": {
+      "RHEL7.5": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7-RAW",
+        "version": "[parameters('rhel7Latest')]"
+      },       
+      "RHEL7.4": {
+        "publisher": "RedHat",
+        "offer": "RHEL",
+        "sku": "7.4",
+        "version": "latest"
+      },
+      "CENTOS7.5": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "7.5",
+        "version": "latest"
+      }
+    },
+    "nicName": "[concat(parameters('ComputerName'),'_nic01')]",
+    "dataDiskStorageType": "[parameters('dataDiskStorageType')]",
+    "dataDrivesCount": "[length(parameters('dataDriveSizeGB'))]",
+    "copy":
+    [
+      {
+        "name": "dataDisks",
+        "count": "[if(equals(variables('dataDrivesCount'),0),1, variables('dataDrivesCount'))]",
+        "input": {
+          "name": "[concat(parameters('ComputerName'), '_dataDisk_' , copyIndex('dataDisks'))]",
+          "lun": "[copyIndex('dataDisks')]",
+          "createOption": "Empty",
+          "diskSizeGB": "[if(equals(variables('dataDrivesCount'),0),1,parameters('dataDriveSizeGB')[copyIndex('dataDisks')])]",
+          "managedDisk": {
+            "storageAccountType": "[variables('dataDiskStorageType')]"
+          }
+        }
+    }
+  ]
+  },
+  "resources": [
+    {
+      "name": "[variables('nicName')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2017-09-01",
+      "location": "[ResourceGroup().location]",
+      "dependsOn": [],
+      "tags": {
+        "OWNER": "[parameters('owner')]",
+        "DEPLOYMENT_ID": "[parameters('deploymentId')]",
+        "ROLE_PURPOSE": "[parameters('rolePurpose')]",
+        "ENVIRONMENT": "[parameters('environment')]",
+        "PRODUCT_APP": "[parameters('productApp')]"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "primary",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "privateIPAddressVersion": "IPv4",
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "macAddress": "string",
+        "primary": true
+      }
+    },
+    {
+      "name": "[parameters('computerName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2018-04-01",
+      "location": "[ResourceGroup().location]",
+      "tags": {
+        "OWNER": "[parameters('owner')]",
+        "DEPLOYMENT_ID": "[parameters('deploymentId')]",
+        "ROLE_PURPOSE": "[parameters('rolePurpose')]",
+        "ENVIRONMENT": "[parameters('environment')]",
+        "PRODUCT_APP": "[parameters('productApp')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+      ],
+      "properties": {
+        "availabilitySet": "[if(equals(length(parameters('availabilitySetName')),0), json('null'), json(concat('{\"id\": \"', resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName')), '\"}')) )]",
+        "osProfile": {
+          "computerName": "[parameters('computerName')]",
+          "adminUsername": "[parameters('adminusername')]",
+          "adminPassword": "[parameters('AdminPassword')]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[parameters('computerSize')]"
+        },
+        "storageProfile": {
+          "imageReference": "[variables('OSVersion')[parameters('LinuxVersion')]]",
+          "osDisk": {
+            "createOption": "FromImage",
+            "diskSizeGB": "[parameters('osDiskSize')]",
+            "managedDisk": {
+              "storageAccountType": "[parameters('osDiskStorageType')]"
+            }
+          },
+          "dataDisks": 
+          "[if(equals(variables('dataDrivesCount'),0),json('null'),variables('dataDisks'))]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {}
+}
