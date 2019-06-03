@@ -1,0 +1,19 @@
+    - name: Create Resource Group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group_env }}"
+        location: "{{ var_location}}"
+        client_id: "{{ AZURE_RM_CLIENTID }}"
+        secret: "{{ AZURE_RM_SECRET }}"
+        tenant: "{{ AZURE_RM_TENANTID }}"
+        subscription_id: "{{ var_azure_rm_subid }}"
+        tags:
+          OWNER: "{{ var_owner }}"       
+          ENVIRONMENT: "{{ var_environment }}"
+
+    - name: Get Resource ID
+      shell: az group show -n {{ resource_group_env }} --query id
+      register: resourceId
+
+    - name: Print Resource ID
+      debug:
+        msg: "resource_id:resource-group:{{ resourceId.stdout }}"

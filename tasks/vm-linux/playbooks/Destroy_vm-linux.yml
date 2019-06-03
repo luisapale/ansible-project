@@ -1,0 +1,20 @@
+--- 
+  - connection: local
+    gather_facts: true
+    hosts: localhost
+
+    vars:
+      var_azure_rm_subid: "{{ ansible_env['AZURE_RM_SUB_' + var_location] }}"
+                  
+    tasks:
+
+
+    - name: remove vm and all resources except public ips
+      azure_rm_virtualmachine:
+        client_id: "{{ AZURE_RM_CLIENTID }}"
+        secret: "{{ AZURE_RM_SECRET }}"
+        tenant: "{{ AZURE_RM_TENANTID }}"
+        subscription_id: "{{ var_azure_rm_subid }}"
+        resource_group: "{{ var_resourceGroupName }}"
+        name: "{{ var_vmName }}"
+        state: absent

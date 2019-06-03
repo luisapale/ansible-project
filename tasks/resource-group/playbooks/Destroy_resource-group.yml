@@ -1,0 +1,31 @@
+--- 
+  - connection: local
+    gather_facts: yes
+    hosts: localhost
+
+    vars:
+      var_azure_rm_subid: "{{ ansible_env['AZURE_RM_SUB_' + var_location] }}"
+
+
+    tasks: 
+
+    - name: Get RG Name
+      include_tasks: roles/meaningful_resource-group_role.yml
+      when: var_resourceGroupName == 'toberequested'
+
+    - name: Destroy Resource Group
+      azure_rm_resourcegroup:
+        name: "{{ var_resourceGroupName }}"
+        location: "{{ var_location}}"
+        client_id: "{{ AZURE_RM_CLIENTID }}"
+        secret: "{{ AZURE_RM_SECRET }}"
+        tenant: "{{ AZURE_RM_TENANTID }}"
+        subscription_id: "{{ var_azure_rm_subid }}"
+        state: absent
+        force: yes
+        
+
+
+      
+
+

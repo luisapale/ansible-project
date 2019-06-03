@@ -1,0 +1,37 @@
+- name: Get Token
+  uri:
+    url: "{{ var_mnfTokenUri }}"
+    method: POST
+    body_format:  raw
+    body: client_id="{{ var_mnfClientId }}"&client_secret="{{ var_mnfClientSecret }}"&scope="{{ var_mnfScope }}"&grant_type="{{ var_mnfGrantType }}"&resource="{{ var_mnfClientIdResource }}"    
+    return_content: yes
+    status_code: 200
+    timeout: 60
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+  register: mnfTokenResponse
+
+- name: Get KV Name
+  uri:
+    url: "{{ var_mnfUri }}"
+    method: POST
+    body_format: json
+    headers:
+      Authorization: "Bearer {{ mnfTokenResponse.json.access_token }}"
+      Content-Type: "application/json"
+    body:
+      productName: "{{ var_deploymentId[0:3] }}"
+      resourceTypeName: "{{ var_resourceType }}"
+      projectName: "{{ var_deploymentId[3:6] }}"
+      regionName: "{{ var_location }}"
+      environmentName: "{{ var_environment }}"
+    return_content: yes
+    status_code: 200
+    timeout: 60
+  register: response_reg
+
+- name: Save name
+  set_fact:
+    var_keyVaultName: "{{ response_reg.json[0].name }}"  
+
+

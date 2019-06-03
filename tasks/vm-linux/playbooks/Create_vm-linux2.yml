@@ -1,0 +1,139 @@
+    - name: "Get date"
+      command: "date +%s"
+      register: TimeStamp
+
+    - name: Grab tags
+      shell: az group show -g "{{ var_resourceGroupName }}" --query tags
+      register: rg_tags
+
+    - name: Save Tags
+      set_fact:
+        var_rgTags: "{{ rg_tags.stdout }}"
+      when: rg_tags.stdout | length > 5
+
+    - name: Find Key Vault
+      block:
+      - name: Find Key Vault Name
+        shell: >
+          az keyvault list -g "{{ var_resourceGroupName }}" --query [0].name --output tsv
+        register: var_temp
+        when: var_keyVaultName is not defined
+
+      - name: Save Key Vault Name
+        set_fact:
+          var_keyVaultName: "{{ var_temp.stdout }}"
+        when: var_keyVaultName is not defined
+
+    - name: Generate Linux password
+      shell: echo $(</dev/urandom tr -dc 'A-Za-z0-9#()*+=>?~' | head -c 32 )
+      register: var_temp
+      when: var_adminPassword is not defined
+
+    - name: Set Linux password
+      set_fact:
+        var_adminPassword: "{{ var_temp.stdout_lines[0] }}"
+      when: var_adminPassword is not defined      
+      
+    - name: "Deploy Linux IaaS" 
+      azure_rm_deployment: 
+        client_id: "{{ AZURE_RM_CLIENTID }}"
+        secret: "{{ AZURE_RM_SECRET }}"
+        tenant: "{{ AZURE_RM_TENANTID }}"
+        subscription_id: "{{ var_azure_rm_subid }}"
+        location: "{{ var_location }}"
+        parameters:
+          owner:
+            value: "{{ var_owner }}"
+          deploymentId:
+            value: "{{ var_deploymentId }}"
+          rolePurpose:
+            value: "{{ var_rolePurpose }}"
+          environment:
+            value: "{{ var_environment }}"
+          productApp:
+            value: "{{ var_productApp }}"
+          subnetName:
+            value: "{{ var_subnetName }}"
+          virtualNetworkId:
+            value: "{{ var_virtualNetworkId }}"
+          virtualMachineName:
+            value: "{{ var_vmName }}"
+          virtualMachineRG:
+            value: "{{ var_resourceGroupName }}"
+          virtualMachineSize:
+            value: "{{var_computerSize }}"
+          adminUsername:
+            value: "{{ var_adminUserName }}"
+          adminPassword:
+            value: "{{ var_adminPassword }}"
+          diagnosticsStorageAccountName:
+            value: "{{ var_StorageAccountName }}"
+          diagnosticsStorageAccountId:
+            value: "{{ var_StorageAccountId }}"
+          diagnosticsStorageAccountType:
+            value: "{{ var_StorageAccountType }}"
+          diagnosticsStorageAccountKind:
+            value: "{{ var_StorageAccountKind }}"
+        resource_group_name: "{{ var_resourceGroupName }}"
+        tags: "{{ var_rgTags | default(omit) }}"
+        template: "{{ lookup('file', '../azureDeploy2.json') }}"
+
+    - name: "Save local admin user name on keyvault" 
+      azure_rm_deployment: 
+        client_id: "{{ AZURE_RM_CLIENTID }}"
+        secret: "{{ AZURE_RM_SECRET }}"
+        tenant: "{{ AZURE_RM_TENANTID }}"
+        subscription_id: "{{ var_azure_rm_subid }}"
+        deployment_name: "KeyvautSecret-{{ TimeStamp.stdout }}-{{ var_vmName }}"
+        location: "{{ var_keyVaultLocation if var_keyVaultLocation is defined else var_location }}"
+        parameters: 
+          keyVaultname:
+            value: "{{ var_keyVaultName }}"
+          secretName:
+            value: "{{ var_vmName }}-LocalAdminUserName"
+          secretContentType: 
+            value: "text"
+          secretValue:
+            value: "{{ var_adminUserName }}"
+        tags: "{{ var_rgTags | default(omit) }}"
+        resource_group_name: "{{ var_keyVaultResourceGroupName if var_keyVaultResourceGroupName is defined else var_resourceGroupName }}"
+        template: "{{ lookup('file', '../nested/secret.json') }}"
+        
+    - name: "Save local admin password on keyvault" 
+      azure_rm_deployment: 
+        client_id: "{{ AZURE_RM_CLIENTID }}"
+        secret: "{{ AZURE_RM_SECRET }}"
+        tenant: "{{ AZURE_RM_TENANTID }}"
+        subscription_id: "{{ var_azure_rm_subid }}"
+        deployment_name: "KeyvautSecret-{{ TimeStamp.stdout }}-{{ var_vmName }}"
+        location: "{{ var_keyVaultLocation if var_keyVaultLocation is defined else var_location }}"
+        parameters: 
+          keyVaultname:
+            value: "{{ var_keyVaultName }}"
+          secretName:
+            value: "{{ var_vmName }}-LocalAdminPassword"
+          secretContentType: 
+            value: "text"
+          secretValue:
+            value: "{{ var_adminPassword }}"
+        tags: "{{ var_rgTags | default(omit) }}"
+        resource_group_name: "{{ var_keyVaultResourceGroupName if var_keyVaultResourceGroupName is defined else var_resourceGroupName }}"
+        template: "{{ lookup('file', '../nested/secret.json') }}"
+
+    - name: Get Resource ID
+      shell: az resource list -g {{ var_resourceGroupName }} --name {{ var_vmName }} --query [0].id
+      register: resourceId
+
+    - name: Get Primary Private IP address
+      shell: az vm list-ip-addresses -g {{ var_resourceGroupName }} --name {{ var_vmName }} --query [0].virtualMachine.network.privateIpAddresses[0] -o tsv
+      register: privateIpAddress
+
+    - name: Print Resource ID
+      debug:
+        msg: "resource_id:vm-linux:{{ resourceId.stdout }}"
+
+    - name: Print Private IP address
+      debug:
+        msg: "private_ip:{{ var_vmName }}:{{ privateIpAddress.stdout }}"
+
+

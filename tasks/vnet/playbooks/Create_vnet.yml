@@ -1,0 +1,37 @@
+    - name: "Get date"
+      command: "date +%s"
+      register: TimeStamp
+
+    - name: Grab tags
+      shell: az group show -g "{{ var_resourceGroupName }}" --query tags
+      register: rg_tags
+
+    - name: Save Tags
+      set_fact:
+        var_rgTags: "{{ rg_tags.stdout }}"
+      when: rg_tags.stdout | length > 5
+
+    - name: "Deploy vnet"
+      azure_rm_deployment:
+        client_id: "{{ AZURE_RM_CLIENTID }}"
+        secret: "{{ AZURE_RM_SECRET }}"
+        tenant: "{{ AZURE_RM_TENANTID }}"
+        subscription_id: "{{ var_azure_rm_subid }}"
+        location: "{{ var_location }}"
+        parameters:
+          vnetname:
+            value: "{{ var_env_vnetName }}"
+          vnetaddressPrefix:
+            value: "{{ var_addressPrefix }}"
+          subnetName: 
+            value: "{{ var_env_subnetName }}"
+          subnetAddressPrefix: 
+            value: "{{ var_subnetAddressPrefix }}"
+          enableDdosProtection:
+            value: False
+        resource_group_name: "{{ var_resourceGroupName }}"
+        template: "{{ lookup('file', '../azureDeploy.json') }}"
+      retries: 3
+      delay: 10
+      register: result
+      until: result is succeeded
