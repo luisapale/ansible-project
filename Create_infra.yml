@@ -6,7 +6,6 @@
   vars:
     #Environment 
     var_azure_rm_subid: "2b7550e0-f0bc-4530-bbe2-79d186b5e6b8"
-    #var_azure_rm_tenenatid: "126e57bd-8e20-4b0b-a1c7-4f126a2b4d73"
     var_location: "east us"
 
     var_resourceGroupName: "INFRA_DEV_RG001" 
@@ -79,7 +78,7 @@
     - name: "Create Web Server"
       vars:
         var_virtualNetworkId: "/subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ var_resourceGroupName }}/providers/Microsoft.Network/virtualNetworks/{{ var_vnetName }}"
-        var_vmName: "webserver03"
+        var_vmName: "webserver01"
         var_computerSize: "Basic_A1"
         var_adminUserName: "luisapale"
         var_StorageAccountName: "vmlxdiagnostic01websr"
@@ -93,7 +92,7 @@
       vars:
         var_virtualNetworkId: "/subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ var_resourceGroupName }}/providers/Microsoft.Network/virtualNetworks/{{ var_vnetName }}"
         var_vmName: "sqlserver01"
-        var_computerSize: "Standard_A1v2"
+        var_computerSize: "Basic_A1"
         var_adminUserName: "luisapale"
         var_StorageAccountName: "vmlxdiagnostic01sqlsv"
         var_StorageAccountId: "/subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ var_resourceGroupName }}/providers/Microsoft.Storage/storageAccounts/{{ var_StorageAccountName }}"
