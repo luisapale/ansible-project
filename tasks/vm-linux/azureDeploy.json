@@ -38,16 +38,16 @@
         "adminPassword": {
             "type": "string"
         },
-        "diagnosticsStorageAccountName": {
+        "diagStorageAccName": {
             "type": "string"
         },
-        "diagnosticsStorageAccountId": {
+        "diagStorageAccId": {
             "type": "string"
         },
-        "diagnosticsStorageAccountType": {
+        "diagStorageAccType": {
             "type": "string"
         },
-        "diagnosticsStorageAccountKind": {
+        "diagStorageAccKind": {
             "type": "string"
         }
     },
@@ -56,7 +56,7 @@
         "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
         "networkInterfaceName": "[concat(parameters('virtualMachineName'),'_nic01')]",
         "publicIpAddressName": "[concat(parameters('virtualMachineName'),'_ip01')]",
-        "storageContainerUri": "[concat(concat('https://', parameters('diagnosticsstorageAccountName'), '.blob.core.windows.net/'), 'vhds/')]"
+        "storageContainerUri": "[concat(concat('https://', parameters('diagStorageAccName'), '.blob.core.windows.net/'), 'vhds/')]"
     },
     "resources": [
         {
@@ -77,7 +77,7 @@
             "properties": {
                 "ipConfigurations": [
                     {
-                        "name": "ipconfig1",
+                        "name": "ipconfig",
                         "properties": {
                             "subnet": {
                                 "id": "[variables('subnetRef')]"
@@ -117,7 +117,7 @@
               },
             "dependsOn": [
                 "[concat('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]",
-                "[concat('Microsoft.Storage/storageAccounts/', parameters('diagnosticsStorageAccountName'))]"
+                "[concat('Microsoft.Storage/storageAccounts/', parameters('diagStorageAccName'))]"
             ],
             "properties": {
                 "hardwareProfile": {
@@ -127,7 +127,7 @@
                     "osDisk": {
                         "createOption": "fromImage",
                         "vhd": {
-                            "uri": "[concat(variables('storageContainerUri'), parameters('virtualMachineName'), 'disk001', '.vhd')]"
+                            "uri": "[concat(variables('storageContainerUri'), parameters('virtualMachineName'), 'disk01', '.vhd')]"
                         },
                         "name": "[parameters('virtualMachineName')]"
                     },
@@ -153,20 +153,20 @@
                 "diagnosticsProfile": {
                     "bootDiagnostics": {
                         "enabled": true,
-                        "storageUri": "[concat('https://', parameters('diagnosticsStorageAccountName'), '.blob.core.windows.net/')]"
+                        "storageUri": "[concat('https://', parameters('diagStorageAccName'), '.blob.core.windows.net/')]"
                     }
                 }
             }
         },
         {
-            "name": "[parameters('diagnosticsStorageAccountName')]",
+            "name": "[parameters('diagStorageAccName')]",
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2018-07-01",
             "location": "[ResourceGroup().location]",
             "properties": {},
-            "kind": "[parameters('diagnosticsStorageAccountKind')]",
+            "kind": "[parameters('diagStorageAccKind')]",
             "sku": {
-                "name": "[parameters('diagnosticsStorageAccountType')]"
+                "name": "[parameters('diagStorageAccType')]"
             }
         }
     ],

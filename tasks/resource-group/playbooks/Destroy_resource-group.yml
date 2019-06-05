@@ -9,10 +9,6 @@
 
     tasks: 
 
-    - name: Get RG Name
-      include_tasks: roles/meaningful_resource-group_role.yml
-      when: var_resourceGroupName == 'toberequested'
-
     - name: Destroy Resource Group
       azure_rm_resourcegroup:
         name: "{{ var_resourceGroupName }}"

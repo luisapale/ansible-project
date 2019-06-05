@@ -1,43 +1,3 @@
-    # vars:
-    #   var_environment: "Development"
-    #   var_resourceType: "Azure KeyVault"
-    #   var_omsSubscriptionId: "06641137-5a9a-49bb-835d-8f302ba4f946"
-    #   var_omsResourceGroup: "uksodrsg000sw01"
-    #   var_omsWorkspaceName: "UKSODOMS000SW01"
-    #   workspaceId: "/subscriptions/{{ var_omsSubscriptionId }}/resourceGroups/{{ var_omsResourceGroup }}/providers/Microsoft.OperationalInsights/workspaces/{{ var_omsWorkspaceName }}"
-    #   var_buildingBlockTemplate: "key-vault"
-    #   var_buildingBlockVersion: "V1.0.21"
-    #   var_templateRepoUrl: "{{ ansible_env.TEMPLATEREPOURL }}"
-    #   var_templateSasToken: "{{ ansible_env.TEMPLATESASTOKEN }}"
-    #   var_azure_rm_subid: "{{ ansible_env['AZURE_RM_SUB_' + var_location] }}"
-    #   var_tier: "premium"
-    #   var_subnetId: "NULL"
-    #   var_enableSoftDelete: true
-    #   var_skipEndpointConfig: true
-    #   var_ipamUrl: "{{ ansible_env.IPAMURL }}"
-#    tasks:
-#    - block:
-        # - name: Validate format
-        #   assert:
-        #     msg: "{{ item }} should be boolean , you may have unnecesary quotes"
-        #     that:
-        #       - "{{ item }} | type_debug == 'bool'"
-        #   with_items: "{{ boolean_vars }}"
-        #   when: var_enableSoftDelete or var_skipEndpointConfig is defined
-
-        # - name: Validate Key Vault Tier
-        #   assert:
-        #     msg: "var_tier should be either 'premium' or 'standard' - Current value is: {{ var_tier }}"
-        #     that:
-        #       - var_tier == "premium" or var_tier == "standard"          
-
-        # - name: Validate Mandatory Parameters
-        #   assert:
-        #     msg: "Mandatory parameter {{ item }} is not defined"
-        #     that:
-        #       - item is defined
-        #   with_items: "{{ mandatory_parameters }}"
-
     - name: "Get date"
       command: "date +%s"
       register: TimeStamp
@@ -53,7 +13,7 @@
 
     - name: Create Key Vault
       azure_rm_deployment:
-        deployment_name: "{{ var_keyVaultName }}-Key-Vault-{{ TimeStamp.stdout }}"
+        deployment_name: "{{ var_env_keyVaultName }}-Key-Vault-{{ TimeStamp.stdout }}"
         location: "{{ var_location }}"
         client_id: "{{ AZURE_RM_CLIENTID }}"
         secret: "{{ AZURE_RM_SECRET }}"
@@ -61,7 +21,7 @@
         subscription_id: "{{ var_azure_rm_subid }}"
         parameters:
           keyVaultname:
-            value: "{{ var_keyVaultName }}"
+            value: "{{ var_env_keyVaultName }}"
           objectId:
             value: "{{ var_ObjectsId }}"
           owner:
@@ -85,7 +45,7 @@
       until: result is succeeded
 
     - name: Get Resource ID
-      shell: az resource list -g {{ var_resourceGroupName }} --name {{ var_keyVaultName }} --query [0].id
+      shell: az resource list -g {{ var_resourceGroupName }} --name {{ var_env_keyVaultName }} --query [0].id
       register: resourceId
 
     - name: Print Resource ID

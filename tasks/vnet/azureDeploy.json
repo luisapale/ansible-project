@@ -16,6 +16,12 @@
         },
         "enableDdosProtection": {
             "type": "bool"
+        },
+        "owner": {
+            "type": "string"
+        },
+          "deploymentId": {
+            "type": "string"
         }
     },
     "resources": [
@@ -24,6 +30,11 @@
             "name": "[parameters('vnetname')]",
             "type": "Microsoft.Network/virtualNetworks",
             "location":"[resourceGroup().location]",
+            "tags": {
+              "OWNER": "[parameters('owner')]",
+              "DEPLOYMENT_ID": "[parameters('deploymentId')]",
+              "ROLE_PURPOSE": "Azure Vnet"
+            },
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [

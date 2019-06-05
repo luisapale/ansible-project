@@ -4,16 +4,20 @@
   hosts: localhost
 
   vars:
-    # Variables - Environment ---------------------------------------------------------
-    var_azure_rm_subid: "2b7550e0-f0bc-4530-bbe2-79d186b5e6b8"    
+    #Environment 
+    var_azure_rm_subid: "2b7550e0-f0bc-4530-bbe2-79d186b5e6b8"
+    #var_azure_rm_tenenatid: "126e57bd-8e20-4b0b-a1c7-4f126a2b4d73"
     var_location: "east us"
-    #naming convention
-    var_resourceGroupName: "INFRA_DEV_RG002" 
-    var_vnetName: "vnet"
-    var_subnetName: "subnet"
 
-    #Variables - OMS 
-    var_omsSubscriptionId: "{{ var_azure_rm_subid }}"
+    var_resourceGroupName: "INFRA_DEV_RG001" 
+    var_vnetName: "DEV-VNET01"
+    var_subnetName: "DEV-SUBNET01"
+    var_addressPrefix: "192.168.15.0/25"
+    var_subnetAddressPrefix: "192.168.15.0/27"
+    var_keyVaultName: "DEVTECHPROJKEYVAULT001"
+
+    #OMS 
+    var_omsSubscriptionId: "2b7550e0-f0bc-4530-bbe2-79d186b5e6b8"
     var_omsResourceGroup: "OMS_DEV_RG"
     var_omsWorkspaceName: "logsworkspacedev"
 
@@ -21,7 +25,7 @@
     var_owner: "luisapalechor.lp@gmail.com"
     var_deploymentId: "DEV01"
     var_productApp: "DevProject"
-    var_global_chargeCode: "101201"
+    var_global_chargeCode: "DEVP001"
     var_environment: "Development"
     
   tasks:
@@ -32,7 +36,7 @@
         -p '{{ AZURE_RM_SECRET }}'
         --tenant "{{ AZURE_RM_TENANTID }}" && az account set --subscription "{{ var_azure_rm_subid }}"
   
-    - name: "Create resource group"     ###DONE!!!!!!!!!!!!!!!!!!!!!!!!!
+    - name: "Create resource group"     
       vars:
         resource_id_var: "resource_group"
         resource_group_env: "{{ var_resourceGroupName }}"
@@ -40,22 +44,22 @@
         var_delay: 10
       include_tasks: tasks/resource-group/playbooks/Create_resource-group.yml
 
-    - name: "Create vnet and subnet"     ###DONE!!!!!!!!!!!!!no tiene tags!!!!!!!!!!!!
+    - name: "Create vnet and subnet"
       vars:
         resource_id_var: "vnet_subnet"
         var_env_vnetName: "{{ var_vnetName }}"
-        var_addressPrefix: "10.1.0.0/16"
+        var_env_addressPrefix: "{{ var_addressPrefix }}}"
         var_env_subnetName: "{{ var_subnetName }}"
-        var_subnetAddressPrefix: "10.1.0.0/24"
+        var_env_subnetAddressPrefix: "{{ var_subnetAddressPrefix }}"
         var_retries: 5
         var_delay: 10
       include_tasks: tasks/vnet/playbooks/Create_vnet.yml
 
-    - name: "Create key vault"        ###DONE!!!!!!!!!!!!!!!!!!!!!!!!!
+    - name: "Create key vault"
       vars:
         resource_id_var: "key_vault"
         regular_expression: "subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{resource_group}}/providers/Microsoft.KeyVault/vaults/(.*)\\\\"
-        var_keyVaultName: "KEYVAULTDEVLUI00123e"
+        var_env_keyVaultName: "{{var_keyVaultName}}"
         var_tier: "Standard"
         var_subnetId: "NULL"
         var_ObjectsId: "d97d973b-b743-41d1-a1f5-d5042d795836"
@@ -64,101 +68,49 @@
         var_delay: 10
         workspaceId: "/subscriptions/{{ var_omsSubscriptionId }}/resourceGroups/{{ var_omsResourceGroup }}/providers/Microsoft.OperationalInsights/workspaces/{{ var_omsWorkspaceName }}"
       include_tasks: tasks/key-vault/playbooks/Create_key-vault.yml
-    
+      
+    - name: "AZ Add key vaul permissions"
+      shell: >
+        az keyvault set-policy 
+        --name "KEYVAULTDEVLUI00123e" 
+        --object-i 6e300f6c-5712-4ceb-8477-c44ac1e076b8 
+        --secret-permissions get list purge recover restore set
+
     - name: "Create Web Server"
       vars:
         var_virtualNetworkId: "/subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ var_resourceGroupName }}/providers/Microsoft.Network/virtualNetworks/{{ var_vnetName }}"
-        var_vmName: "webserver02"
+        var_vmName: "webserver03"
         var_computerSize: "Basic_A1"
         var_adminUserName: "luisapale"
-        var_StorageAccountName: "vmlinuxdiagnostic002"
+        var_StorageAccountName: "vmlxdiagnostic01websr"
         var_StorageAccountId: "/subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ var_resourceGroupName }}/providers/Microsoft.Storage/storageAccounts/{{ var_StorageAccountName }}"
         var_StorageAccountType: "Standard_LRS"
         var_StorageAccountKind: "Storage"
-        #var_linuxVersion: "RHEL7.5" 
-        #var_rhel7Latest: "7.5.2018081518"
-        #var_resourceType: "Linux Virtual Machine"
         var_rolePurpose: "Linux Virtual Machine"
-      include_tasks: tasks/vm-linux/playbooks/Create_vm-linux2.yml
+      include_tasks: tasks/vm-linux/playbooks/Create_vm-linux.yml
 
     - name: "Create SQL Server"
       vars:
         var_virtualNetworkId: "/subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ var_resourceGroupName }}/providers/Microsoft.Network/virtualNetworks/{{ var_vnetName }}"
         var_vmName: "sqlserver01"
-        var_computerSize: "Basic_A1"
+        var_computerSize: "Standard_A1v2"
         var_adminUserName: "luisapale"
-        var_StorageAccountName: "vmlinuxdiagnostic003"
+        var_StorageAccountName: "vmlxdiagnostic01sqlsv"
         var_StorageAccountId: "/subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ var_resourceGroupName }}/providers/Microsoft.Storage/storageAccounts/{{ var_StorageAccountName }}"
         var_StorageAccountType: "Standard_LRS"
         var_StorageAccountKind: "Storage"
-        #var_linuxVersion: "RHEL7.5" 
-        #var_rhel7Latest: "7.5.2018081518"
-        #var_resourceType: "Linux Virtual Machine"
         var_rolePurpose: "Linux Virtual Machine"
-      include_tasks: tasks/vm-linux/playbooks/Create_vm-linux2.yml
+      include_tasks: tasks/vm-linux/playbooks/Create_vm-linux.yml
 
-
-
-    # - name: "Create SQL Server"     ###DONE!!!!!!!!!!!!!!!!!!!!!!!!!
-    #   vars:
-    #     resource_id_var: "sql_server"
-    #     regular_expression: "subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ resource_group }}/providers/Microsoft.Sql/servers/(.*)\\\\"
-    #     var_resourceGroupName: "{{resource_group}}"
-    #     Var_skipEndpointConfig: true
-    #     var_allowAccessToAzureServices: true
-    #     var_environment: "Development"
-    #     var_sqlServerAdminUserName: "dbWSS"
-    #     var_subnetId: "NULL"
-    #     var_vnetName: "vnet"
-    #     var_subnetName: "subnet"
-    #     var_sqlName: "SQLservertechtest103"
-    #     var_rolePurpose: "SQL Server"
-    #   include_tasks: tasks/sql-server/playbooks/Create_sql-server.yml
-
-    # - name: "Create SQL Database"     ###PENDING!!!!!!!!!!!!!!!!!!!!!!!!!
-    #   vars:
-    #     resource_id_var: "sql_db"
-    #     regular_expression: "subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ resource_group }}/providers/Microsoft.Sql/servers/{{ sql_server}}/databases/(.*)\\\\"
-    #     var_retries: 70
-    #     var_delay: 10
-    #     var_resourceGroupName: "{{ resource_group }}"
-    #     var_serverName: "{{ sql_server }}"
-    #     var_skuName: "{{ var_database_skuName }}"
-    #     var_databaseTier: "{{ var_database_tier }}"
-    #     var_dbSize: "{{ var_database_size }}"
-    #     var_dbName: "namedblu243"
-    #     var_tagRole: "SQL Database"
-
-            #   var_environment: "Development"
-    #   var_skuName: "s2"
-    #   var_databaseTier: "Standard"
-    #   var_dbSize: "10"
-    #   var_zoneRedundant: False
-    #   var_omsSubscriptionId: "06641137-5a9a-49bb-835d-8f302ba4f946"
-    #   var_omsResourceGroup: "uksodrsg000sw01"
-    #   var_omsWorkspaceName: "UKSODOMS000SW01"
-    #   var_sqlbackupshorttermretentiondays: "14"
-    #   var_sqlbackuplongtermretentionweeklyweeks: "6"
-    #   var_sqlbackuplongtermretentionmonthlymonths: "6"
-    #   var_collation: "SQL_Latin1_General_CP1_CI_AS"
-
-    #   var_resourceType: "Azure SQL Database"
-    #   var_tagRole: "SQL Database"
-    #  include_tasks: tasks/sql-database/playbooks/Create_sql-database.yml
-
-
-    # - name: "AZ Add https inbound rule to NSG"
-    #   shell: >
-    #     az network nsg rule create
-    #     -g "{{ bb_resource_group }}"
-    #     --nsg-name "{{ bb_nsg_am }}"
-    #     -n "Allow_Https"
-    #     --priority 2999
-    #     --source-address-prefixes '*'
-    #     --source-port-ranges 443
-    #     --destination-address-prefixes '*'
-    #     --destination-port-ranges 443
-    #     --direction Inbound
-    #     --access Allow
-    #     --protocol Tcp
-    #     --description "Allow Https traffic"
+    - name: "Create Load Balancer"
+      vars:
+        var_virtualNetworkId: "/subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ var_resourceGroupName }}/providers/Microsoft.Network/virtualNetworks/{{ var_vnetName }}"
+        var_vmName: "loadbalancer"
+        var_computerSize: "Basic_A1"
+        var_adminUserName: "luisapale"
+        var_StorageAccountName: "vmlxdiagnostic01lb"
+        var_StorageAccountId: "/subscriptions/{{ var_azure_rm_subid }}/resourceGroups/{{ var_resourceGroupName }}/providers/Microsoft.Storage/storageAccounts/{{ var_StorageAccountName }}"
+        var_StorageAccountType: "Standard_LRS"
+        var_StorageAccountKind: "Storage"
+        var_rolePurpose: "Linux Virtual Machine"
+      include_tasks: tasks/vm-linux/playbooks/Create_vm-linux.yml

@@ -29,6 +29,10 @@
             value: "{{ var_subnetAddressPrefix }}"
           enableDdosProtection:
             value: False
+          owner:
+            value: "{{ var_owner }}"
+          deploymentId:
+            value: "{{ var_deploymentId }}"
         resource_group_name: "{{ var_resourceGroupName }}"
         template: "{{ lookup('file', '../azureDeploy.json') }}"
       retries: 3

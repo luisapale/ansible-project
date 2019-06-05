@@ -66,17 +66,17 @@
             value: "{{ var_adminUserName }}"
           adminPassword:
             value: "{{ var_adminPassword }}"
-          diagnosticsStorageAccountName:
+          diagStorageAccName:
             value: "{{ var_StorageAccountName }}"
-          diagnosticsStorageAccountId:
+          diagStorageAccId:
             value: "{{ var_StorageAccountId }}"
-          diagnosticsStorageAccountType:
+          diagStorageAccType:
             value: "{{ var_StorageAccountType }}"
-          diagnosticsStorageAccountKind:
+          diagStorageAccKind:
             value: "{{ var_StorageAccountKind }}"
         resource_group_name: "{{ var_resourceGroupName }}"
         tags: "{{ var_rgTags | default(omit) }}"
-        template: "{{ lookup('file', '../azureDeploy2.json') }}"
+        template: "{{ lookup('file', '../azureDeploy.json') }}"
 
     - name: "Save local admin user name on keyvault" 
       azure_rm_deployment: 
